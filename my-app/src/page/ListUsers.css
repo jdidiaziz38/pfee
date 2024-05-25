@@ -2,7 +2,7 @@
     
     background-color: #e2c6c6; /* Couleur de fond */
     color: white; /* Couleur du texte */
-    padding: 0.5rem 1rem; /* Espacement intérieur */
+    padding: 0.1rem 1rem; /* Espacement intérieur */
     border-radius: 20px; /* Rayon de bordure */
     cursor: pointer; /* Curseur au survol */
     position: relative;
@@ -44,12 +44,21 @@
   }
   
   .edit {
-    width: 35px;
+    width: 30px;
     float: left;
     padding-top: 0.5rem;
     padding-bottom: 0.5rem;
     background-color: #ead6d6;
     border-radius: 30px;
+    display: grid;
+    justify-content: center;
+    margin: 5px;
+
+    
+  }
+  .AiOutlineEdit{
+    position: relative;
+    left: 50%;
   }
 
   @media screen and (max-width: 1200px) {

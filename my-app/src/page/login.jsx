@@ -1,6 +1,5 @@
 import React, { useState ,useEffect} from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import '../assets/css/style.css';
 import logoEnova from '../assets/images/auth/logoEnova.png';
 import urLogo from '../assets/images/auth/ur10e.gif';
@@ -8,44 +7,46 @@ import image1 from '../assets/images/auth/coming-soon-object1.png';
 import image2 from '../assets/images/auth/coming-soon-object2.png';
 import image3 from '../assets/images/auth/coming-soon-object3.png'
 import image4 from '../assets/images/auth/polygon-object.svg'
+import { serviceUser } from '../services/http-client.service';
+import { state } from '../states/global.state';
 
 const LoginPage = () => {
     const navigate = useNavigate();
+
+   const location = useLocation();//Object { pathname: "/login", search: "", hash: "", state: null, key: "tzvcgchg" }
+    // console.log ( location); 
+
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
 
     useEffect(() => {
-        // Vérifie s'il y a des informations d'identification stockées localement
-        const storedCredentials = localStorage.getItem('userCredentials');
-        if (storedCredentials) {
-            const { email, password } = JSON.parse(storedCredentials);
-            // Vous pouvez faire d'autres vérifications ici si nécessaire
-            console.log('Informations d\'identification enregistrées localement:', email);
-        }
+     
     }, []);
+ 
 
     const handleLogin = async (e) => {
-        e.preventDefault(); // Empêche le rechargement de la page
+        e.preventDefault(); // Prevent page reload
         try {
-            const response = await axios.post('http://localhost:3000/sign-in', { email, password });
-            console.log('Login successful:', response.data);
-            // Stocke les informations d'identification localement
-            localStorage.setItem('user', JSON.stringify(response.data));
-            // Redirection vers le tableau de bord ou autre page appropriée
-            navigate('/dashboard');
+            const response =  await serviceUser.signIn({email :  email, password : password } ) ;
+            const responseJson = await response.json();
+          if (!response.ok) { 
+            console.error('Login failed:', responseJson); 
+            showAlert(responseJson.message); 
+            return;}   
+            serviceUser.save(responseJson);
+            // Redirect to the dashboard or appropriate page
+            const savedUser = serviceUser.get(); 
+            state.wsClient.sendMessage({ mode: 'cnx', type: "USER",    username:   ( savedUser==null || savedUser == undefined ? "unknown" : savedUser.email)     }) ;
+            const refirectPath = serviceUser.verifyConnectUser() ; 
+            if ( refirectPath.state == false ){   showAlert('no page can you access to her'); return;}
+            navigate(refirectPath.path);
+         
         } catch (error) {
-            console.error('Login failed:', error.response.data);
-            // Vérifier le message d'erreur pour afficher un message d'alerte approprié
-            if (error.response.data.message === 'Invalid credentials') {
-                showAlert('Invalid credentials. Please check your email and password.');
-            } else if (error.response.data.message === 'No account found') {
-                showAlert('No account found with this email. Please sign up.');
-            } else {
-                showAlert('An error occurred. Please try again later.');
-            }
+          console.error('Login failed:', error);
+          showAlert('An error occurred. Please try again later.');
         }
-    };
-
+      };
+      
 
     const showAlert = (message) => {
         alert(message);

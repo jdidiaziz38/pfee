@@ -17,17 +17,14 @@
 
 .Enova{
     display: flex;
-    height: 4rem;
+    height: 3rem;
     justify-content: center;
-    
+    position: relative;
+    top: 30px;
 
-    
 }
 
-.Enova>span>span{
-    color: brown;
-}
-/* menu */
+
 .menu{
     margin-top: 4rem;
     display: flex;

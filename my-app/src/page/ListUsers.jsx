@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { AiOutlineEdit, AiOutlineDelete } from 'react-icons/ai';
 import { Modal, Button, Form, Input, Select, Alert, Space } from 'antd';
 import { MdAdd } from 'react-icons/md';
-import { PlusOutlined, EyeInvisibleOutlined, EyeTwoTone } from '@ant-design/icons';
+import { EyeInvisibleOutlined, EyeTwoTone } from '@ant-design/icons';
+import { serviceUser } from '../services/http-client.service';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const Tableau = () => {
   const [data, setData] = useState([]);
@@ -15,150 +17,106 @@ const Tableau = () => {
     prenom: '',
     email: '',
     password: '',
-    role: 'Utilisateur'
+    role: 'Utilisateur',
   });
-  const [form] = Form.useForm();
   const [alertVisible, setAlertVisible] = useState(false);
   const [deleteAlertVisible, setDeleteAlertVisible] = useState(false);
   const [userToDelete, setUserToDelete] = useState(null);
-  const [editingUserId, setEditingUserId] = useState(null);
-  const [passwordVisible, setPasswordVisible] = useState({}); // State pour gérer la visibilité des mots de passe
+  const [passwordVisible, setPasswordVisible] = useState({});
+  const [form] = Form.useForm();
+
+
+  const navigate = useNavigate(); 
+  const location = useLocation(); 
+  const refirectPath = serviceUser.verifyConnectUser(location.pathname); 
+  if ( !refirectPath.state){  navigate(refirectPath.path);}
+
+
+
+
 
   useEffect(() => {
     fetchData();
   }, []);
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setAlertVisible(true);
-    }, 3000);
-    return () => clearTimeout(timer);
-  }, []);
-
   const fetchData = async () => {
     try {
-      const response = await fetch('http://localhost:3000/users');
-      const jsonData = await response.json();
+      const jsonData = await serviceUser.selectAll();
       setData(jsonData);
     } catch (error) {
       console.error('Error fetching data:', error);
     }
   };
 
-  const handleDelete = async (id) => {
-    setUserToDelete(data.find((row) => row._id === id));
-  };
-
-  const confirmDelete = async () => {
-    try {
-      await fetch(`http://localhost:3000/users/${userToDelete._id}`, {
-        method: 'DELETE',
-      });
-      setDeleteAlertVisible(true);
-      setUserToDelete(null);
-      fetchData();
-      setTimeout(() => {
-        setDeleteAlertVisible(false);
-      }, 3000);
-    } catch (error) {
-      console.error('Error deleting user:', error);
-    }
-  };
-
   const closeModal = () => {
     setShowModal(false);
     setEditingUser(null);
-    setEditingUserId(null);
     setNewUser({
       nom: '',
       prenom: '',
       email: '',
       password: '',
       role: 'Utilisateur',
-      photo: ''
     });
     form.resetFields();
   };
 
-  const handleEdit = (id) => {
-    const userToEdit = data.find((row) => row._id === id);
-    if (userToEdit) {
-      setEditingUser(userToEdit);
-      form.setFieldsValue({
-        nom: userToEdit.nom,
-        prenom: userToEdit.prenom,
-        email: userToEdit.email,
-        password: userToEdit.password,
-        role: userToEdit.role
-      });
-      setShowModal(true);
-    }
-  }; 
-  
-                            /* const handleEdit = async () => {
-    try {
-      const response = await fetch(`http://localhost:3000/users/${editingUser._id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          nom: form.getFieldValue('nom'),
-          prenom: form.getFieldValue('prenom'),
-          email: form.getFieldValue('email'),
-          password: form.getFieldValue('password'),
-          role: form.getFieldValue('role')
-        }),
-      });
-  
-      if (response.ok) {
-        // Mise à jour réussie, vous pouvez effectuer les actions nécessaires ici
-      } else {
-        // Gérer les cas d'erreur, par exemple :
-        const errorData = await response.json();
-        console.error('Erreur lors de la mise à jour :', errorData);
-      }
-    } catch (error) {
-      console.error('Erreur lors de la mise à jour :', error);
-    }
-  };  */
-  
+  const handleEdit = (user) => {
+    setEditingUser(user);
+    setShowModal(true);
+    form.setFieldsValue(user);
+  };
 
   const handleAdd = () => {
-    if (editingUser) {
-      setEditingUser(null);
-      setEditingUserId(null);
-    }
+    setEditingUser(null);
     setShowModal(true);
+    form.resetFields();
   };
 
   const handleSubmit = async (values) => {
+    if (editingUser) {
+      await updateUser({ ...values, _id: editingUser._id });
+    } else {
+      await createUser(values);
+    }
+    closeModal();
+  };
+
+  const createUser = async (values) => {
     try {
-      let endpoint = 'http://localhost:3000/users';
-      let method = 'POST';
-
-      if (values._id) {
-        endpoint += `/${values._id}`;
-        method = 'PATCH';
-      }
-
-      const response = await fetch(endpoint, {
-        method: method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(values),
-      });
-
-      if (response.ok) {
-        setAlertVisible(true);
-        setShowModal(false);
-        fetchData();
-      } else {
-        throw new Error('Failed to add/update user');
-      }
+      await serviceUser.insert(values);
+      setAlertVisible(true);
+      fetchData();
+      setTimeout(() => setAlertVisible(false), 3000);
     } catch (error) {
-      console.error('Error adding/updating user:', error);
+      console.error('Error adding user:', error);
+    }
+  };
+
+  const updateUser = async (values) => {
+    try {
+      await serviceUser.update(values);
+      setAlertVisible(true);
+      fetchData();
+      setTimeout(() => setAlertVisible(false), 3000);
+    } catch (error) {
+      console.error('Error updating user:', error);
+    }
+  };
+
+  const handleDelete = (user) => {
+    setUserToDelete(user);
+  };
+
+  const confirmDelete = async () => {
+    try {
+      await serviceUser.delete(userToDelete._id);
+      setDeleteAlertVisible(true);
+      setUserToDelete(null);
+      fetchData();
+      setTimeout(() => setDeleteAlertVisible(false), 3000);
+    } catch (error) {
+      console.error('Error deleting user:', error);
     }
   };
 
@@ -181,12 +139,11 @@ const Tableau = () => {
     return true;
   });
 
-  // Fonction pour basculer la visibilité du mot de passe
   const togglePasswordVisibility = (userId) => {
-    setPasswordVisible({
-      ...passwordVisible,
-      [userId]: !passwordVisible[userId]
-    });
+    setPasswordVisible((prev) => ({
+      ...prev,
+      [userId]: !prev[userId],
+    }));
   };
 
   return (
@@ -194,8 +151,7 @@ const Tableau = () => {
       <h2>Liste des utilisateurs</h2>
       {alertVisible && (
         <Alert
-          message="Utilisateur ajouté."
-          description=""
+          message="Utilisateur ajouté ou modifié avec succès."
           type="success"
           showIcon
         />
@@ -203,53 +159,94 @@ const Tableau = () => {
       {deleteAlertVisible && (
         <Alert
           message="Utilisateur supprimé avec succès."
-          description=""
           type="success"
-          showIcon/>
+          showIcon
+        />
       )}
       {userToDelete && (
         <Space direction="vertical" style={{ width: '100%' }}>
           <Alert
-            message="Êtes-vous sûr de vouloir supprimer l'utilisateur"
-            description={`"${userToDelete.nom}" ?`}
+            message={`Êtes-vous sûr de vouloir supprimer l'utilisateur "${userToDelete.nom}" ?`}
             type="info"
             showIcon
             closable
             onClose={() => setUserToDelete(null)}
           />
           <div style={{ marginTop: '16px' }}>
-            <Button size="small" style={{ marginRight: '8px' }} onClick={() => setUserToDelete(null)}>Annuler</Button>
-            <Button size="small" danger onClick={confirmDelete}>Supprimer</Button>
+            <Button
+              size="small"
+              style={{ marginRight: '8px' }}
+              onClick={() => setUserToDelete(null)}
+            >
+              Annuler
+            </Button>
+            <Button size="small" danger onClick={confirmDelete}>
+              Supprimer
+            </Button>
           </div>
         </Space>
       )}
       <div>
-        <Modal title={editingUser ? "Modifier un utilisateur" : "Ajouter un utilisateur"} visible={showModal} onCancel={closeModal} footer={null}>
-          <Form form={form} onFinish={handleSubmit} initialValues={editingUser || newUser}>
-            <Form.Item label="Nom" name="nom" rules={[{ required: true, message: 'Ce champ est requis' }]}>
+        <Modal
+          title={editingUser ? "Modifier un utilisateur" : "Ajouter un utilisateur"}
+          visible={showModal}
+          onCancel={closeModal}
+          footer={null}
+        >
+          <Form form={form} onFinish={handleSubmit} initialValues={newUser}>
+            <Form.Item
+              label="Nom"
+              name="nom"
+              rules={[{ required: true, message: 'Ce champ est requis' }]}
+            >
               <Input />
             </Form.Item>
-            <Form.Item label="Prénom" name="prenom" rules={[{ required: true, message: 'Ce champ est requis' }]}>
+            <Form.Item
+              label="Prénom"
+              name="prenom"
+              rules={[{ required: true, message: 'Ce champ est requis' }]}
+            >
               <Input />
             </Form.Item>
-            <Form.Item label="Email" name="email" rules={[{ required: true, message: 'Ce champ est requis' }]}>
+            <Form.Item
+              label="Email"
+              name="email"
+              rules={[{ required: true, message: 'Ce champ est requis' }]}
+            >
               <Input />
             </Form.Item>
-            <Form.Item label="Mot de passe" name="password" rules={[{ required: true, message: 'Ce champ est requis' }]}>
-              <Input.Password iconRender={visible => (visible ? <EyeTwoTone onClick={() => togglePasswordVisibility(new Date().getTime())} /> : <EyeInvisibleOutlined onClick={() => togglePasswordVisibility(new Date().getTime())} />)} />
+            <Form.Item
+              label="Mot de passe"
+              name="password"
+              rules={[{ required: true, message: 'Ce champ est requis' }]}
+            >
+              <Input.Password
+                iconRender={(visible) =>
+                  visible ? <EyeTwoTone /> : <EyeInvisibleOutlined />
+                }
+              />
             </Form.Item>
-            <Form.Item label="Role" name="role" rules={[{ required: true, message: 'Ce champ est requis' }]}>
+            <Form.Item
+              label="Role"
+              name="role"
+              rules={[{ required: true, message: 'Ce champ est requis' }]}
+            >
               <Select defaultValue="Utilisateur">
                 <Select.Option value="Admin">Admin</Select.Option>
                 <Select.Option value="Utilisateur">Utilisateur</Select.Option>
               </Select>
             </Form.Item>
-            <Button onClick={closeModal} style={{ marginRight: 8 }}>Annuler</Button>
-            <Button type="primary" htmlType="submit">Valider</Button>
+            <Button onClick={closeModal} style={{ marginRight: 8 }}>
+              Annuler
+            </Button>
+            <Button type="primary" htmlType="submit">
+              Valider
+            </Button>
           </Form>
         </Modal>
         <button onClick={handleAdd} className="btn-ajouter">
-          <MdAdd className="ajouter" />Ajouter
+          <MdAdd className="ajouter" />
+          Ajouter
         </button>
       </div>
       <table className="table">
@@ -273,16 +270,29 @@ const Tableau = () => {
                 {passwordVisible[row._id] ? (
                   <span>{row.password}</span>
                 ) : (
-                  <Input.Password value={row.password} readOnly />
+                  <Input.Password
+                    value={row.password}
+                    readOnly
+                    iconRender={(visible) =>
+                      visible ? (
+                        <EyeTwoTone
+                          onClick={() => togglePasswordVisibility(row._id)}
+                        />
+                      ) : (
+                        <EyeInvisibleOutlined
+                          onClick={() => togglePasswordVisibility(row._id)}
+                        />
+                      )
+                    }
+                  />
                 )}
-                
               </td>
               <td className="border px-4 py-2">{row.role}</td>
               <td className="border px-4 py-2">
-                <button onClick={() => handleEdit(row._id)} className="edit">
+                <button onClick={() => handleEdit(row)} className="edit">
                   <AiOutlineEdit />
                 </button>
-                <button onClick={() => handleDelete(row._id)} className="edit">
+                <button onClick={() => handleDelete(row)} className="edit">
                   <AiOutlineDelete />
                 </button>
               </td>

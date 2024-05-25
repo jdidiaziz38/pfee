@@ -1,28 +1,39 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button, Table } from 'react-bootstrap';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import './HistoriquePage.css';
-import { useHistory } from 'react-router-dom';
+import {  serviceHistory, serviceUser } from './services/http-client.service';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const HistoriquePage = () => {
-
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date());
+  const [historyData, setHistoryData] = useState([]);
 
-  const [historyData, setHistoryData] = useState([
-    { id: 1, user: { nom: 'John',prenom: 'Doe'}, robot: 'Robot 1', pieces: 100, palletizedPieces: 80 },
-    { id: 2, user: { nom: 'Aziz',prenom: 'Jdidi'}, robot: 'Robot 2', pieces: 120, palletizedPieces: 100 },
-    { id: 3, user: { nom: 'Adem',prenom: 'Jdidi' }, robot: 'Robot 3', pieces: 90, palletizedPieces: 70 },
-    { id: 4, user: { nom: 'Belhsan',prenom: 'Bh' }, robot: 'Robot 4', pieces: 90, palletizedPieces: 70 },
-    { id: 5, user: { nom: 'Eya',prenom: 'mabrouk'}, robot: 'Robot 5', pieces: 90, palletizedPieces: 70 },
-    { id: 6, user: { nom: 'Tasnim',prenom: 'Hk'}, robot: 'Robot 6', pieces: 90, palletizedPieces: 70 },
-  ]);
+
+  const navigate = useNavigate(); 
+  const location = useLocation(); 
+  const refirectPath = serviceUser.verifyConnectUser(location.pathname); 
+  if ( !refirectPath.state){  navigate(refirectPath.path);}
+
+  useEffect(() => {
+    fetchHistoryData();
+  }, []);
+
+  const fetchHistoryData = async () => {
+    try { 
+      const data = await  serviceHistory.selectAll();
+
+      setHistoryData(data);
+    } catch (error) {
+      console.error('Error fetching history data', error);
+    }
+  };
 
   const handlePrint = () => {
-    window.print('./Statistiques');
+    window.print();
     console.log('Printing Statistiques');
-    history.push(`/statistiques?startDate=${startDate.toISOString()}&endDate=${endDate.toISOString()}`);
   };
 
   return (
@@ -50,32 +61,29 @@ const HistoriquePage = () => {
       <Table striped bordered hover>
         <thead>
           <tr>
-            <th>Nom</th>
-            <th>prénom</th>
-            <th>Réf Robot</th>
+            <th>Ref Robot</th>
+            <th>Date</th>
             <th>Nombre de pièces totales</th>
             <th>Nombre de pièces palettisées</th>
             <th>Action</th>
           </tr>
         </thead>
         <tbody>
-  {historyData.map(item => (
-    <tr key={item.id}>
-      <td className="text-center">{item.user.nom}</td>
-      <td className="text-center">{item.user.prenom}</td>
-      <td className="text-center">{item.robot}</td>
-      <td className="text-center">{item.pieces}</td>
-      <td className="text-center">{item.palletizedPieces}</td>
-      <td>
-        <Button variant="primary" onClick={handlePrint} className="imprimer">
-          Imprimer
-        </Button>
-      </td>
-    </tr>
-  ))}
-</tbody>
+          {historyData.map(item => (
+            <tr key={item._id}>
+              <td className="text-center">{ ( item.robot ? item.robot.reference_robot : "vide")  }</td>
+              <td className="text-center">{item.timestamp}</td>
+              <td className="text-center">{ ( item.robot ? item.robot.nombre_pieces : "vide")  }</td>
+              <td className="text-center">{item.piecesPalatize}</td>
+              <td>
+                <Button variant="primary" onClick={handlePrint} className="imprimer">
+                  Imprimer
+                </Button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
       </Table>
-     
     </div>
   );
 };

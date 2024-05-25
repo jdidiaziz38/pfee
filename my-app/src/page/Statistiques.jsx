@@ -1,17 +1,27 @@
 import React, { useState, useEffect } from 'react';
 import Card from './Dashboard/Card';
 import StatistiqueChart from './StatistiqueChart';
-import TopProd from './TopProd';
+
 import BasicAreaChart from './BasicAreaChart';
 import { w3cwebsocket as WebSocket } from 'websocket';
 import DatePicker from 'react-datepicker';
 import ProfilePage from './ProfilePage';
-
+import { useLocation, useNavigate } from 'react-router-dom';
+import { serviceUser } from '../services/http-client.service';
+import PieChart from './PieChart';
 const Statistiques = () => {
 
   const [searchTerm, setSearchTerm] = useState('');
   const [startDate, setStartDate] = useState(new Date());
   const [endDate, setEndDate] = useState(new Date());
+
+
+  const navigate = useNavigate(); 
+  const location = useLocation(); 
+  const refirectPath = serviceUser.verifyConnectUser(location.pathname); 
+  if ( !refirectPath.state){  navigate(refirectPath.path);}
+
+
   const handlePrint = () => {
     window.print();
   
@@ -147,8 +157,9 @@ const Statistiques = () => {
         
       </div>
       <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)' ,gap:'10px'}}>
-      <TopProd /> 
+      <PieChart />
       <ProfilePage/>
+      
     
       </div>
       

@@ -14,6 +14,7 @@
     "@testing-library/user-event": "^13.5.0",
     "antd": "^5.16.5",
     "async-validator": "^4.2.5",
+    "axios": "^1.6.8",
     "bootstrap": "^5.3.3",
     "highcharts-react-official": "^3.2.1",
     "mdb-react-ui-kit": "^8.0.0",

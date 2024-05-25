@@ -1,5 +1,5 @@
 import './App.css';
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Sidebar from './page/Sidebar';
 import ListUsers from './page/ListUsers';
@@ -9,9 +9,25 @@ import Signup from './page/signup'; // Importez le composant Signup
 import HistoriquePage from './HistoriquePage';
 import Dashboard from './page/Dashboard/Dashboard';
 import Statistiques from './page/Statistiques';
-import WebSocketClient from './WebSocketClient';
+import WebSocketClient from './services/websocket-client.service';
+import { state } from './states/global.state'; 
+
+
+state.wsClient = new WebSocketClient(process.env.REACT_APP_WEBSOCKET_BASE_URL);
 
 function App() {
+ 
+  useEffect(() => { 
+    state.wsClient.connect(); 
+    return () => {
+      state.wsClient.disconnect();
+    };
+  }, []);
+
+
+
+
+
   return (
     
     <div className="App">
@@ -57,8 +73,7 @@ function MainContentWithSidebar() {
         <Sidebar />
       </div>
       <div className="MainContent">
-        <Routes>
-        
+        <Routes> 
           <Route path='/Dashboard' element={<Dashboard/>} />
           <Route path='/ListUsers' element={<ListUsers />} />
           <Route path='/ListRobot' element={<ListRobot />} />
@@ -67,7 +82,6 @@ function MainContentWithSidebar() {
         </Routes>
       </div>
       <div>
-      <WebSocketClient />
     </div>
     </div>
   );

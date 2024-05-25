@@ -6,8 +6,7 @@ import './Sidebar.css'
 import  {useState} from 'react';
 import {useNavigate} from "react-router-dom"
 import { useEffect } from 'react';
-import Avatar from '@mui/material/Avatar';
-import Stack from '@mui/material/Stack';
+import { serviceUser } from '../services/http-client.service';
 
 
 
@@ -16,9 +15,9 @@ const Sidebar =() =>{
     const navigate = useNavigate();
     const[selected, setSelected] = useState(-1);
     const handleLogout = () => {
-        console.log("logout");
-navigate('/login');
-      };
+        serviceUser.clear()
+         navigate('/login');
+    };
     useEffect(() => {
         console.log('selected' , selected);
         if(selected === 0)
@@ -64,8 +63,10 @@ navigate('/login');
                         </div>
                     )
                 })}
-            <div className='menuItem'>
-                <UilSignOutAlt onClick={handleLogout}></UilSignOutAlt>
+            <div className='menuItem'  onClick={handleLogout}>
+                {/* <UilSignOutAlt onClick={handleLogout}> </UilSignOutAlt> */}
+                <UilSignOutAlt />
+                <span>Sign Out</span>
                 </div>  
             </div>
         

@@ -1,6 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import '../assets/css/style.css';
 import logoEnova from '../assets/images/auth/logoEnova.png';
 import urLogo from '../assets/images/auth/ur10e.gif';
@@ -8,8 +7,10 @@ import image1 from '../assets/images/auth/coming-soon-object1.png';
 import image2 from '../assets/images/auth/coming-soon-object2.png';
 import image3 from '../assets/images/auth/coming-soon-object3.png'
 import image4 from '../assets/images/auth/polygon-object.svg'
+import { serviceUser } from '../services/http-client.service';
 const SignupPage = () => {
     const navigate = useNavigate();
+    const [passwordError, setPasswordError] = useState(false);
 
     const handleConnexionClick = () => {
         console.log('Bouton de connexion cliqué !');
@@ -21,26 +22,21 @@ const SignupPage = () => {
         const nom= e.target.elements.nom.value;
         const prenom = e.target.elements.prenom.value;
         const email = e.target.elements.email.value;
-        const password = e.target.elements.password.value;  
-    
-        console.log(nom, prenom, email, password);
+        const password = e.target.elements.password.value;
+        const confirmPassword = e.target.elements.confirmPassword.value;
+        if (password !== confirmPassword) {
+            setPasswordError(true);
+            return;
+        }
+        setPasswordError(false); 
 
         const postData = async () => {
             try {
-                const response = await fetch('http://localhost:3000/sign-up', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ nom: nom, prenom: prenom, email: email, password: password }),
-                });
-    
+                 const response  = await serviceUser.signUp({ nom: nom, prenom: prenom, email: email, password: password ,role : "Admin" });
                 if (!response.ok) {
                     throw new Error('Erreur lors de la requête'); // modale !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
                 }
                 navigate('/login');
-                const updatedUser = await response.json();
-                console.log(updatedUser);
             } catch (error) {
                 console.error('Erreur:', error.message);
             }
@@ -94,6 +90,7 @@ const SignupPage = () => {
                                     </div>
                                     <div className="relative">
                                         <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Confirmer le mot de passe" className="input w-full" required />
+                                        {passwordError && <p className="text-red-500">Les mots de passe ne correspondent pas à confirme password.</p>}
                                     </div>
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center">
